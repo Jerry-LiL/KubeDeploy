@@ -31,7 +31,7 @@ jobs:
       - name: Build orders-api
         run: docker build -t orders-api:${{ github.sha }} kubedeploy/app
       - name: Block high and critical CVEs
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: orders-api:${{ github.sha }}
           format: table
