@@ -1,0 +1,5 @@
+bucket         = "kubedeploy-tfstate-CHANGE-ME"
+key            = "dev/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "kubedeploy-tflock"
+encrypt        = true

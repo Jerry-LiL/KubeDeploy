@@ -1,0 +1,8 @@
+project              = "kubedeploy"
+environment          = "dev"
+aws_region           = "us-east-1"
+github_repository    = "Jerry-LiL/KubeDeploy"
+state_bucket_name    = "kubedeploy-tfstate-CHANGE-ME"
+lock_table_name      = "kubedeploy-tflock"
+ecr_force_delete     = true
+create_oidc_provider = true
