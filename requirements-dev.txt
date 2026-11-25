@@ -1,0 +1,4 @@
+-r kubedeploy/app/requirements.txt
+pytest==8.3.4
+ruff==0.17.6
+PyYAML==6.0.2

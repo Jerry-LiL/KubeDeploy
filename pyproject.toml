@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["kubedeploy/app", "kubedeploy/tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["kubedeploy/app/tests", "kubedeploy/tests"]
+pythonpath = ["kubedeploy/app"]

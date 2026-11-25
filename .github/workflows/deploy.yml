@@ -1,0 +1,66 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  ECR_REPOSITORY: kubedeploy/orders-api
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+
+      - name: Build orders-api
+        run: docker build -t orders-api:${{ github.sha }} kubedeploy/app
+
+      - name: Block high and critical CVEs
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: orders-api:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+
+      - name: Push to ECR
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE="$REGISTRY/$ECR_REPOSITORY"
+          docker tag "orders-api:${{ github.sha }}" "$IMAGE:${{ github.sha }}"
+          docker tag "orders-api:${{ github.sha }}" "$IMAGE:latest"
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE:latest"
+
+      - name: Roll out to Kubernetes
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+        run: |
+          if [ -z "$KUBECONFIG_B64" ]; then
+            echo "KUBECONFIG_B64 is not set"
+            exit 1
+          fi
+          echo "$KUBECONFIG_B64" | base64 -d > kubeconfig
+          export KUBECONFIG="$PWD/kubeconfig"
+          sed -i "s|newName: orders-api|newName: $REGISTRY/$ECR_REPOSITORY|" kubedeploy/kustomization.yaml
+          sed -i "s|newTag: local|newTag: ${{ github.sha }}|" kubedeploy/kustomization.yaml
+          kubectl apply -k kubedeploy
+          kubectl -n kubedeploy rollout status deployment/orders-api --timeout=180s
