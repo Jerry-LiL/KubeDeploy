@@ -1,0 +1,11 @@
+groups:
+  - name: orders-api
+    rules:
+      - alert: Http5xxSpike
+        expr: sum(rate(http_requests_total{job="orders-api",status=~"5.."}[5m])) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: orders-api is returning 5xx responses
+          description: The 5xx rate has been above 0.2 requests per second for 2 minutes.
